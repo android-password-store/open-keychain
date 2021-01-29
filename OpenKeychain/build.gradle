@@ -1,6 +1,8 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.squareup.sqldelight'
 
+final def keystorePropertiesFile = rootProject.file("keystore.properties")
+
 dependencies {
     // from local Android SDK
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
@@ -203,34 +205,20 @@ android {
         }
     }
 
-    /*
-     * To sign release build, create file gradle.properties in ~/.gradle/ with this content:
-     *
-     * signingStoreLocation=/home/key.store
-     * signingStorePassword=xxx
-     * signingKeyAlias=alias
-     * signingKeyPassword=xxx
-     */
-    if (project.hasProperty('signingStoreLocation') &&
-            project.hasProperty('signingStorePassword') &&
-            project.hasProperty('signingKeyAlias') &&
-            project.hasProperty('signingKeyPassword')) {
-        println "Found sign properties in gradle.properties! Signing build…"
+    if (keystorePropertiesFile.exists()) {
+        final def keystoreProperties = new Properties()
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
         signingConfigs {
             release {
-                storeFile file(signingStoreLocation)
-                storePassword signingStorePassword
-                keyAlias signingKeyAlias
-                keyPassword signingKeyPassword
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
             }
         }
-
         buildTypes.release.signingConfig = signingConfigs.release
-    } else {
-        buildTypes.release.signingConfig = null
     }
-
     // NOTE: Lint is disabled because it slows down builds,
     // to enable it comment out the code at the bottom of this build.gradle
     lintOptions {
